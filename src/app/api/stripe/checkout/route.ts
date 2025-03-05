@@ -67,10 +67,10 @@ export async function POST(req: NextRequest) {
       ],
       mode: "subscription",
       success_url: `${
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        process.env.NEXT_PUBLIC_APP_URL || "https://vixowl.com"
       }/home?success=true`,
       cancel_url: `${
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        process.env.NEXT_PUBLIC_APP_URL || "https://vixowl.com"
       }/home?canceled=true`,
       metadata: {
         userId,
