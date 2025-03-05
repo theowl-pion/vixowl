@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  userId    String
+  src       String   @db.Text
+  textMetadata Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id                String   @id
+  email             String   @unique
+  stripeCustomerId  String?
+  subscriptionId    String?
+  subscriptionStatus String?  @default("free")
+  imagesUploaded    Int      @default(0)
+  subscriptionPeriodEnd DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  images            Image[]
+} 

@@ -1,21 +1,189 @@
+@import "../styles/tutorial.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
+/* Base styles with scrolling enabled */
+html {
+  height: auto !important;
+  min-height: 100%;
+  overflow: auto !important;
+  position: static !important;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  height: auto !important;
+  min-height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  position: static !important;
+  margin: 0;
+  padding: 0;
+  background-color: #0a0a0a;
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* React Select Custom Styles */
+.react-select-container .react-select__control {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.react-select-container .react-select__control:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.react-select-container .react-select__control--is-focused {
+  border-color: rgba(205, 255, 99, 0.5);
+  box-shadow: 0 0 0 1px rgba(205, 255, 99, 0.2);
+}
+
+.react-select-container .react-select__menu {
+  background-color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.react-select-container .react-select__option {
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.react-select-container .react-select__option--is-focused {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.react-select-container .react-select__option--is-selected {
+  background-color: rgba(205, 255, 99, 0.2);
+  color: #cdff63;
+}
+
+.react-select-container .react-select__single-value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.react-select-container .react-select__input-container {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.react-select-container .react-select__indicator {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.react-select-container .react-select__indicator:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.react-select-container .react-select__multi-value {
+  background-color: rgba(205, 255, 99, 0.1);
+}
+
+.react-select-container .react-select__multi-value__label {
+  color: rgba(205, 255, 99, 0.9);
+}
+
+.react-select-container .react-select__multi-value__remove:hover {
+  background-color: rgba(255, 99, 99, 0.2);
+  color: #ff6363;
+}
+
+/* Font select styles */
+.font-select .font-select__control {
+  background-color: #2a2a2a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.75rem !important;
+}
+
+.font-select .font-select__menu {
+  background-color: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.75rem !important;
+}
+
+.font-select .font-select__option {
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.font-select .font-select__option:hover {
+  background-color: rgba(205, 255, 99, 0.1) !important;
+  color: white !important;
+}
+
+/* Slider styles */
+.slider-input {
+  @apply accent-[#CDFF63];
+}
+
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #cdff63;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.slider-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #cdff63;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.slider-input::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  background: #cdff63;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Optional scrollbar hiding utility classes */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

@@ -1,0 +1,65 @@
+/* Tutorial highlight effect */
+.tutorial-highlight {
+  position: relative;
+  z-index: 100;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 4px rgba(205, 255, 99, 0.5);
+  border-radius: inherit;
+  outline: none;
+}
+
+.tutorial-highlight::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 2px dashed rgba(205, 255, 99, 0.7);
+  border-radius: 8px;
+  pointer-events: none;
+  animation: rotate 10s linear infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(205, 255, 99, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(205, 255, 99, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(205, 255, 99, 0);
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Selected preset button style */
+.preset-button-selected {
+  background-color: rgba(205, 255, 99, 0.2) !important;
+  color: #cdff63 !important;
+  border: 1px solid rgba(205, 255, 99, 0.4);
+  box-shadow: 0 0 0 1px rgba(205, 255, 99, 0.1), 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 500;
+}
+
+/* Tooltip animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
