@@ -1,6 +1,7 @@
 import React from "react";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
 import StripeCheckoutButton from "./StripeCheckoutButton";
+import { toast } from "react-hot-toast";
 
 interface UsageDisplayProps {
   isSubscribed: boolean;
@@ -24,20 +25,32 @@ export default function UsageDisplay({
     ? Infinity
     : Math.max(0, FREE_PLAN_IMAGE_LIMIT - imagesUploaded);
 
+  const handleUpgradeClick = () => {
+    if (onUpgradeClick) {
+      onUpgradeClick();
+    } else {
+      // This will be handled by the StripeCheckoutButton component
+      console.log("Direct upgrade button clicked");
+    }
+  };
+
   return (
     <div className="bg-[#1A1A1A] rounded-xl p-6 border border-white/10">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-white">Usage</h3>
         {!isSubscribed && onUpgradeClick && (
           <button
-            onClick={onUpgradeClick}
+            onClick={handleUpgradeClick}
             className="text-[#CDFF63] text-sm font-medium hover:underline"
           >
             Upgrade
           </button>
         )}
         {!isSubscribed && !onUpgradeClick && (
-          <StripeCheckoutButton className="text-[#CDFF63] text-sm font-medium hover:underline">
+          <StripeCheckoutButton
+            id="usage-upgrade-button"
+            className="text-[#CDFF63] text-sm font-medium hover:underline"
+          >
             Upgrade
           </StripeCheckoutButton>
         )}
@@ -103,6 +116,14 @@ export default function UsageDisplay({
                 your free plan! Deleting images won't free up your quota. Time
                 to level up! ✨ Upgrade for unlimited creative powers! 🚀
               </p>
+              <div className="mt-3">
+                <StripeCheckoutButton
+                  id="limit-reached-upgrade-button"
+                  className="w-full bg-[#CDFF63] text-black font-medium py-2 rounded-lg hover:bg-[#CDFF63]/90 transition-colors"
+                >
+                  Upgrade Now
+                </StripeCheckoutButton>
+              </div>
             </div>
           )}
 

@@ -9,6 +9,16 @@ export const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || "";
 // Helper to check if code is running on server
 const isServer = typeof window === "undefined";
 
+// Log environment variables for debugging (only on server)
+if (isServer) {
+  console.log(
+    "STRIPE_PUBLISHABLE_KEY set:",
+    !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  );
+  console.log("STRIPE_PRICE_ID set:", !!process.env.STRIPE_PRICE_ID);
+  console.log("STRIPE_SECRET_KEY set:", !!process.env.STRIPE_SECRET_KEY);
+}
+
 // Only initialize Stripe on the server side
 export const stripe = isServer
   ? new Stripe(process.env.STRIPE_SECRET_KEY || "", {

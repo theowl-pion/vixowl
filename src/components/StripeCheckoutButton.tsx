@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import axios from "axios";
-import { STRIPE_PUBLISHABLE_KEY } from "@/lib/stripe";
+import { toast } from "react-hot-toast";
 
 interface StripeCheckoutButtonProps {
   children: React.ReactNode;
@@ -15,17 +15,15 @@ export default function StripeCheckoutButton({
   id,
 }: StripeCheckoutButtonProps) {
   const { user } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCheckout = async () => {
     try {
-      if (!user) {
-        console.error("User not authenticated");
-        return;
-      }
+      setIsLoading(true);
 
-      // Make sure we have a publishable key
-      if (!STRIPE_PUBLISHABLE_KEY) {
-        console.error("Stripe publishable key is not configured");
+      if (!user) {
+        toast.error("Please sign in to upgrade");
+        console.error("User not authenticated");
         return;
       }
 
@@ -34,10 +32,21 @@ export default function StripeCheckoutButton({
         email: user.emailAddresses[0].emailAddress,
       });
 
+      // Log the response for debugging
+      console.log("Checkout session created:", response.data);
+
       // Redirect to Stripe Checkout
-      window.location.href = response.data.url;
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      } else {
+        toast.error("Failed to create checkout session");
+        console.error("No URL returned from checkout API");
+      }
     } catch (error) {
       console.error("Error creating checkout session:", error);
+      toast.error("Failed to start checkout process. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,9 +55,9 @@ export default function StripeCheckoutButton({
       id={id}
       onClick={handleCheckout}
       className={className}
-      disabled={!STRIPE_PUBLISHABLE_KEY}
+      disabled={isLoading}
     >
-      {children}
+      {isLoading ? "Loading..." : children}
     </button>
   );
 }

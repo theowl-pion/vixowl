@@ -117,7 +117,10 @@ export default function UpgradeModal({
             </ul>
           </div>
 
-          <StripeCheckoutButton className="w-full bg-[#CDFF63] text-black font-medium py-3 rounded-lg hover:bg-[#CDFF63]/90 transition-colors">
+          <StripeCheckoutButton
+            id="modal-upgrade-button"
+            className="w-full bg-[#CDFF63] text-black font-medium py-3 rounded-lg hover:bg-[#CDFF63]/90 transition-colors"
+          >
             Upgrade Now
           </StripeCheckoutButton>
 
