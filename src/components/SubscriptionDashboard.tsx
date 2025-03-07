@@ -36,8 +36,19 @@ export default function SubscriptionDashboard() {
       );
 
       toast.dismiss();
+      console.log("Portal response:", response.data);
+
       if (response.data.url) {
-        window.location.href = response.data.url;
+        // Validate URL before redirecting
+        try {
+          new URL(response.data.url);
+          window.location.href = response.data.url;
+        } catch (e) {
+          console.error("Invalid URL received:", response.data.url);
+          toast.error("Received invalid portal URL");
+        }
+      } else {
+        toast.error("No portal URL received from server");
       }
     } catch (error: any) {
       toast.dismiss();

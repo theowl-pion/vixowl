@@ -56,12 +56,24 @@ export async function POST(req: NextRequest) {
 
       // Create a billing portal session
       try {
+        console.log(
+          "Creating Stripe portal session for customer:",
+          user.stripeCustomerId
+        );
+
+        // Make sure we have a valid return URL
+        const returnUrl = process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/settings`
+          : "https://vixowl.com/settings";
+
+        console.log("Return URL:", returnUrl);
+
         const session = await stripe.billingPortal.sessions.create({
           customer: user.stripeCustomerId,
-          return_url: `${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/settings`,
+          return_url: returnUrl,
         });
+
+        console.log("Portal session created:", session.url);
 
         return NextResponse.json({ url: session.url });
       } catch (stripeError: any) {
