@@ -5,6 +5,7 @@ import {
   deleteImage as deleteImageApi,
 } from "@/services/api";
 import { ImageData } from "@/types/image";
+import { useAuth } from "@/context/AuthContext";
 
 interface UseImagesProps {
   userId?: string;
@@ -16,6 +17,7 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
+  const { session } = useAuth();
 
   const fetchImages = useCallback(async () => {
     if (!userId) {
@@ -23,9 +25,14 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
       return;
     }
 
+    if (!session?.access_token) {
+      console.warn("No access token available for fetchImages");
+      return;
+    }
+
     try {
       console.log("fetchImages - Fetching images for user:", userId);
-      const fetchedImages = await fetchUserImages();
+      const fetchedImages = await fetchUserImages(session.access_token);
       console.log("fetchImages - Fetched images:", fetchedImages.length);
       setImages(fetchedImages);
       setError(null);
@@ -34,15 +41,18 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
       console.error("Error fetching images:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch images");
     }
-  }, [userId]);
+  }, [userId, session?.access_token]);
 
   // Fetch images on mount and when userId changes
   useEffect(() => {
-    if (userId) {
+    if (userId && session?.access_token) {
       console.log("useImages - Initial fetch for user:", userId);
       fetchImages();
+    } else {
+      // Clear images if not authenticated
+      setImages([]);
     }
-  }, [userId, fetchImages]);
+  }, [userId, fetchImages, session?.access_token]);
 
   const uploadImage = useCallback(
     async (imageData: string) => {
@@ -51,10 +61,19 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
         throw new Error("User ID is required");
       }
 
+      if (!session?.access_token) {
+        console.error("No access token available for uploadImage");
+        throw new Error("Authentication required");
+      }
+
       try {
         setIsUploading(true);
         console.log("Starting upload...");
-        const result = await uploadImageApi(imageData, userId);
+        const result = await uploadImageApi(
+          imageData,
+          userId,
+          session.access_token
+        );
         console.log("Upload successful, result:", result);
 
         // Refresh the images list
@@ -74,13 +93,18 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
         setIsUploading(false);
       }
     },
-    [fetchImages, userId, onUploadComplete]
+    [fetchImages, userId, onUploadComplete, session?.access_token]
   );
 
   const deleteImage = useCallback(
     async (imageId: string) => {
+      if (!session?.access_token) {
+        console.error("No access token available for deleteImage");
+        throw new Error("Authentication required");
+      }
+
       try {
-        await deleteImageApi(imageId);
+        await deleteImageApi(imageId, session.access_token);
         setImages((prevImages) =>
           prevImages.filter((img) => img.id !== imageId)
         );
@@ -94,7 +118,7 @@ export function useImages({ userId, onUploadComplete }: UseImagesProps) {
         throw error;
       }
     },
-    [onUploadComplete]
+    [onUploadComplete, session?.access_token]
   );
 
   // Force refresh function

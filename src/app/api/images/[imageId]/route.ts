@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
+
+// Helper function to authenticate the user
+async function authenticateUser(req: NextRequest) {
+  // Get the authorization header
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { authenticated: false, userId: null };
+  }
+
+  // Extract the token
+  const token = authHeader.split(" ")[1];
+
+  // Verify the token
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return { authenticated: false, userId: null };
+  }
+
+  return { authenticated: true, userId: data.user.id, user: data.user };
+}
 
 export async function GET(
   request: NextRequest,
@@ -12,8 +33,9 @@ export async function GET(
 
     console.log("🔍 GET /api/images/[imageId] - Fetching image:", imageId);
 
-    const { userId } = getAuth(request);
-    if (!userId) {
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(request);
+    if (!authenticated || !userId) {
       console.error("❌ GET /api/images/[imageId] - Unauthorized: No user ID");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -56,34 +78,47 @@ export async function DELETE(
   { params }: { params: { imageId: string } }
 ) {
   try {
-    const { userId } = getAuth(request);
-    if (!userId) {
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(request);
+    if (!authenticated || !userId) {
+      console.error(
+        "❌ DELETE /api/images/[imageId] - Unauthorized: No user ID"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const imageId = params.imageId;
+    console.log("🔍 DELETE /api/images/[imageId] - Deleting image:", imageId);
 
-    // Vérifier si l'image appartient à l'utilisateur
+    // Check if the image belongs to the user
     const image = await db.image.findUnique({
       where: { id: imageId },
     });
 
     if (!image) {
+      console.error(
+        "❌ DELETE /api/images/[imageId] - Image not found:",
+        imageId
+      );
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
     if (image.userId !== userId) {
+      console.error(
+        "❌ DELETE /api/images/[imageId] - Unauthorized: Image belongs to different user"
+      );
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Supprimer l'image
+    // Delete the image
     await db.image.delete({
       where: { id: imageId },
     });
 
+    console.log("✅ DELETE /api/images/[imageId] - Image deleted:", imageId);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error("❌ DELETE /api/images/[imageId] - Error:", error);
     return NextResponse.json(
       { error: "Failed to delete image" },
       { status: 500 }
@@ -101,8 +136,9 @@ export async function PUT(
       params.imageId
     );
 
-    const { userId } = getAuth(req);
-    if (!userId) {
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(req);
+    if (!authenticated || !userId) {
       console.error("❌ PUT /api/images/[imageId] - Unauthorized: No user ID");
       return NextResponse.json(
         { error: "Unauthorized", message: "User not authenticated" },

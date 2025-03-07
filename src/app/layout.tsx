@@ -1,11 +1,10 @@
 // src/app/layout.tsx
-import "../app/globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-//import "./global.css";
-import { ReactNode } from "react";
+import "./globals.css";
 import { Inter } from "next/font/google";
-import { Toaster } from "react-hot-toast";
+import type { ReactNode } from "react";
 import { Metadata } from "next";
+import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,8 +46,6 @@ export const metadata: Metadata = {
         alt: "Vixowl - Text Positioning Behind Images",
       },
     ],
-    locale: "en_US",
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
@@ -62,30 +59,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider
-      appearance={{
-        layout: {
-          socialButtonsVariant: "iconButton",
-        },
-        variables: {
-          colorPrimary: "#CDFF63",
-        },
-      }}
-    >
-      <html lang="en" className="overflow-auto">
-        <head>
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-          />
-          <link rel="icon" href="/assets/vixowl.png" type="image/png" />
-          <link rel="apple-touch-icon" href="/assets/vixowl.png" />
-        </head>
-        <body className={`${inter.className} overflow-auto`}>
+    <html lang="en">
+      <body className={inter.className}>
+        <AuthProvider>
           {children}
-          <Toaster position="bottom-right" />
-        </body>
-      </html>
-    </ClerkProvider>
+          <Toaster position="top-center" />
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

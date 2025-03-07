@@ -1,43 +1,46 @@
 import Link from "next/link";
-import { UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Logo from "./Logo";
 
 export default function Sidebar() {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut();
-    router.push("/");
+    try {
+      // First navigate to sign-in page
+      router.push("/sign-in");
+      // Then sign out
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
     <aside className="w-64 bg-[#1A1A1A] p-6 flex flex-col items-center">
       <div className="mb-16 flex justify-center">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#CDFF63]/20 to-transparent blur-xl"></div>
-          <h1 className="text-[#CDFF63] text-2xl font-medium relative">
-            OwlView
-          </h1>
-        </div>
+        <Logo size="lg" />
       </div>
 
       <div className="mb-16 w-full flex flex-col items-center">
-        <div className="w-16 h-20 overflow-hidden mx-auto">
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                userButtonAvatarBox: "w-full h-full",
-                userButtonAvatar: "w-full h-full object-cover",
-              },
-            }}
-          />
+        <div className="w-16 h-16 overflow-hidden mx-auto rounded-full bg-white/10 flex items-center justify-center">
+          {user?.user_metadata?.avatar_url ? (
+            <img
+              src={user.user_metadata.avatar_url}
+              alt="User avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-white text-2xl font-medium">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
-        <div className="text-center">
+        <div className="text-center mt-3">
           <div className="text-white/90 text-sm font-medium">
-            {user?.firstName} {user?.lastName}
+            {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
           </div>
         </div>
       </div>
@@ -105,9 +108,7 @@ export default function Sidebar() {
               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
             />
           </svg>
-          <span className="truncate">
-            {user?.emailAddresses[0].emailAddress}
-          </span>
+          <span className="truncate">{user?.email}</span>
         </div>
 
         <button

@@ -1,12 +1,18 @@
 import { ImageData } from "@/types/image";
 
-export async function fetchUserImages(): Promise<ImageData[]> {
+export async function fetchUserImages(token?: string): Promise<ImageData[]> {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch("/api/images", {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
     if (!response.ok) {
       const error = await response.json();
@@ -19,7 +25,7 @@ export async function fetchUserImages(): Promise<ImageData[]> {
   }
 }
 
-export async function fetchImage(imageId: string) {
+export async function fetchImage(imageId: string, token?: string) {
   console.log("🔍 fetchImage - Fetching image:", imageId);
 
   try {
@@ -28,11 +34,17 @@ export async function fetchImage(imageId: string) {
       throw new Error("Invalid image ID: Image ID is required");
     }
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`/api/images/${imageId}`, {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -54,14 +66,20 @@ export async function fetchImage(imageId: string) {
   }
 }
 
-export async function trackImageUpload() {
+export async function trackImageUpload(token?: string) {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch("/api/images/upload-tracker", {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -79,6 +97,7 @@ export async function trackImageUpload() {
 export async function uploadImage(
   imageData: string,
   userId: string,
+  token?: string,
   textMetadata?: any
 ) {
   console.log("🔍 uploadImage - Starting upload", {
@@ -100,12 +119,20 @@ export async function uploadImage(
       throw new Error("Invalid user ID: User ID is required");
     }
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     // Attempt to upload the image
     console.log("🔍 uploadImage - Sending POST request to /api/images");
     const response = await fetch("/api/images", {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         imageUrl: imageData,
         userId,
@@ -142,14 +169,20 @@ export async function uploadImage(
   }
 }
 
-export async function deleteImage(imageId: string) {
+export async function deleteImage(imageId: string, token?: string) {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`/api/images/${imageId}`, {
       method: "DELETE",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -167,6 +200,7 @@ export async function deleteImage(imageId: string) {
 export async function updateImage(
   imageId: string,
   imageData: string,
+  token?: string,
   textMetadata?: any
 ) {
   console.log("🔍 updateImage - Starting update", {
@@ -188,6 +222,14 @@ export async function updateImage(
       throw new Error("Invalid image data: The image appears to be empty");
     }
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     // Try to upload as a new image instead of updating
     // This is more reliable than trying to update an existing image
     console.log("🔍 updateImage - Uploading as new image instead of updating");
@@ -195,7 +237,7 @@ export async function updateImage(
       const response = await fetch(`/api/images`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           imageUrl: imageData,
           textMetadata: textMetadata || null,

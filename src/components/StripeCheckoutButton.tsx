@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
@@ -14,7 +14,7 @@ export default function StripeCheckoutButton({
   className = "",
   id,
 }: StripeCheckoutButtonProps) {
-  const { user } = useUser();
+  const { user, session } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -27,23 +27,57 @@ export default function StripeCheckoutButton({
         return;
       }
 
+      console.log("Starting checkout process for user:", user.id);
+      console.log("User email:", user.email);
+
       // Create a checkout session via our API
-      const response = await axios.post("/api/stripe/checkout", {
-        email: user.emailAddresses[0].emailAddress,
-      });
+      const response = await axios
+        .post(
+          "/api/stripe/checkout",
+          {
+            email: user.email,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+          }
+        )
+        .catch((error) => {
+          console.error("Axios error details:", {
+            message: error.message,
+            response: error.response
+              ? {
+                  status: error.response.status,
+                  data: error.response.data,
+                }
+              : "No response",
+            request: error.request
+              ? "Request was made but no response received"
+              : "No request",
+          });
+          throw error; // Re-throw to be caught by the outer catch
+        });
 
       // Log the response for debugging
       console.log("Checkout session created:", response.data);
 
       // Redirect to Stripe Checkout
-      if (response.data.url) {
+      if (response.data && response.data.url) {
+        console.log("Redirecting to:", response.data.url);
         window.location.href = response.data.url;
       } else {
+        console.error("No URL returned from checkout API:", response.data);
         toast.error("Failed to create checkout session");
-        console.error("No URL returned from checkout API");
       }
     } catch (error) {
-      console.error("Error creating checkout session:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error:", error.message);
+        console.error("Status:", error.response?.status);
+        console.error("Response data:", error.response?.data);
+      } else {
+        console.error("Error creating checkout session:", error);
+      }
       toast.error("Failed to start checkout process. Please try again.");
     } finally {
       setIsLoading(false);

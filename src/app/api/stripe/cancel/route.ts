@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { getAuth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
+import { supabase } from "@/lib/supabase";
 
 const prisma = new PrismaClient();
 
+// Helper function to authenticate the user
+async function authenticateUser(req: NextRequest) {
+  // Get the authorization header
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { authenticated: false, userId: null };
+  }
+
+  // Extract the token
+  const token = authHeader.split(" ")[1];
+
+  // Verify the token
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return { authenticated: false, userId: null };
+  }
+
+  return { authenticated: true, userId: data.user.id, user: data.user };
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(req);
 
-    if (!userId) {
+    if (!authenticated || !userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 

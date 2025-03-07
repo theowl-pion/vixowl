@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { redirect, useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,7 +28,7 @@ interface Image {
 }
 
 export default function HomePage() {
-  const { isSignedIn, user } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,10 +61,10 @@ export default function HomePage() {
 
   // Move the redirect to a useEffect hook
   useEffect(() => {
-    if (!isSignedIn) {
+    if (!user) {
       router.push("/");
     }
-  }, [isSignedIn, router]);
+  }, [user, router]);
 
   // Fetch images on initial load and when returning to this page
   useEffect(() => {

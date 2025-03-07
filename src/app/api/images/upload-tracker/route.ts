@@ -1,15 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
+import { supabase } from "@/lib/supabase";
 
 const prisma = new PrismaClient();
 
+// Helper function to authenticate the user
+async function authenticateUser(req: NextRequest) {
+  // Get the authorization header
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { authenticated: false, userId: null, userEmail: null };
+  }
+
+  // Extract the token
+  const token = authHeader.split(" ")[1];
+
+  // Verify the token
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return { authenticated: false, userId: null, userEmail: null };
+  }
+
+  return {
+    authenticated: true,
+    userId: data.user.id,
+    userEmail: data.user.email,
+    user: data.user,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
+    // Authenticate the user
+    const { authenticated, userId, userEmail } = await authenticateUser(req);
 
-    if (!userId) {
+    if (!authenticated || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -23,7 +50,7 @@ export async function POST(req: NextRequest) {
       user = await prisma.user.create({
         data: {
           id: userId,
-          email: "user@example.com", // This will be updated later
+          email: userEmail || "user@example.com", // Use the email from Supabase if available
           imagesUploaded: 1, // Start with 1 since this is their first upload
           subscriptionStatus: "free",
         },

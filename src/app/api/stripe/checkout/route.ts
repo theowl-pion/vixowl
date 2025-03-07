@@ -1,18 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { getAuth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
+import { supabase } from "@/lib/supabase";
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
+    console.log("Stripe checkout API called");
 
-    if (!userId) {
-      console.error("Unauthorized: No user ID found");
+    // Get the authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Unauthorized: No authorization header");
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
+    // Extract the token
+    const token = authHeader.split(" ")[1];
+
+    // Verify the token
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      console.error("Unauthorized: Invalid token");
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const userId = data.user.id;
+    const userEmail = data.user.email;
+    console.log("User authenticated:", userId);
 
     // Check if Stripe is initialized
     if (!stripe) {
@@ -31,25 +48,48 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("Processing checkout for user:", userId);
+    console.log("STRIPE_PRICE_ID:", process.env.STRIPE_PRICE_ID);
+
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+      console.log("Request body:", body);
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      body = {};
+    }
 
     // Get or create user in our database
-    let dbUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    let dbUser;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+      console.log("Database user found:", !!dbUser);
+    } catch (error) {
+      console.error("Error finding user in database:", error);
+      return new NextResponse("Database error", { status: 500 });
+    }
 
     if (!dbUser) {
-      // Get user email from request body
-      const body = await req.json().catch(() => ({}));
-      const email = body.email || "user@example.com";
+      // Get user email from session
+      const email = userEmail || body.email || "user@example.com";
 
       console.log("Creating new user in database:", userId, email);
 
-      dbUser = await prisma.user.create({
-        data: {
-          id: userId,
-          email: email,
-        },
-      });
+      try {
+        dbUser = await prisma.user.create({
+          data: {
+            id: userId,
+            email: email,
+          },
+        });
+        console.log("User created in database:", dbUser.id);
+      } catch (error) {
+        console.error("Error creating user in database:", error);
+        return new NextResponse("Database error", { status: 500 });
+      }
     }
 
     // Get or create Stripe customer
@@ -58,23 +98,30 @@ export async function POST(req: NextRequest) {
     if (!customerId) {
       console.log("Creating new Stripe customer for user:", userId);
 
-      // Create a new customer in Stripe
-      const customer = await stripe.customers.create({
-        email: dbUser.email,
-        metadata: {
-          userId: dbUser.id,
-        },
-      });
+      try {
+        // Create a new customer in Stripe
+        const customer = await stripe.customers.create({
+          email: dbUser.email,
+          metadata: {
+            userId: dbUser.id,
+          },
+        });
 
-      customerId = customer.id;
+        customerId = customer.id;
 
-      console.log("Created Stripe customer:", customerId);
+        console.log("Created Stripe customer:", customerId);
 
-      // Update user with Stripe customer ID
-      await prisma.user.update({
-        where: { id: userId },
-        data: { stripeCustomerId: customerId },
-      });
+        // Update user with Stripe customer ID
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId: customerId },
+        });
+      } catch (error) {
+        console.error("Error creating Stripe customer:", error);
+        return new NextResponse("Stripe customer creation failed", {
+          status: 500,
+        });
+      }
     }
 
     const successUrl = `${
@@ -93,28 +140,36 @@ export async function POST(req: NextRequest) {
     });
 
     // Create a checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1,
+    let checkoutSession;
+    try {
+      checkoutSession = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: process.env.STRIPE_PRICE_ID,
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          userId,
         },
-      ],
-      mode: "subscription",
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        userId,
-      },
-      customer: customerId, // Use the customer ID instead of email
-    });
+        customer: customerId, // Use the customer ID instead of email
+      });
 
-    console.log("Checkout session created:", session.id);
+      console.log("Checkout session created:", checkoutSession.id);
+    } catch (error) {
+      console.error("Error creating Stripe checkout session:", error);
+      return new NextResponse("Stripe checkout session creation failed", {
+        status: 500,
+      });
+    }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch (error: any) {
-    console.error("Error creating checkout session:", error);
+    console.error("Unhandled error in checkout API:", error);
     return new NextResponse(`Error: ${error.message}`, { status: 500 });
   }
 }

@@ -1,20 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { PrismaClient } from "@prisma/client";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
+import { supabase } from "@/lib/supabase";
 
 const prisma = new PrismaClient();
+
+// Helper function to authenticate the user
+async function authenticateUser(req: NextRequest) {
+  // Get the authorization header
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return { authenticated: false, userId: null };
+  }
+
+  // Extract the token
+  const token = authHeader.split(" ")[1];
+
+  // Verify the token
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return { authenticated: false, userId: null };
+  }
+
+  return { authenticated: true, userId: data.user.id, user: data.user };
+}
 
 export const GET = async (req: NextRequest) => {
   try {
     console.log("🔍 GET - Starting image fetch");
 
-    const { userId } = getAuth(req);
-    if (!userId) {
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(req);
+
+    if (!authenticated || !userId) {
       console.error("❌ GET - Unauthorized: No user ID");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
     console.log("✅ GET - User authenticated:", userId);
 
     console.log("🔍 GET - Fetching images for user:", userId);
@@ -38,29 +62,30 @@ export const POST = async (req: NextRequest) => {
   try {
     console.log("🔍 POST - Starting image upload");
 
-    const { userId } = getAuth(req);
-    console.log("🔍 POST - Got userId:", userId);
+    // Authenticate the user
+    const { authenticated, userId, user } = await authenticateUser(req);
 
-    if (!userId) {
+    if (!authenticated || !userId) {
       console.error("❌ POST - Unauthorized: No user ID");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
     console.log("✅ POST - User authenticated:", userId);
 
     // Check if user has reached their free plan limit
     console.log("🔍 POST - Finding user in database");
-    const user = await prisma.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
       where: { id: userId },
     });
 
     // If user doesn't exist, create them
-    if (!user) {
+    if (!dbUser) {
       console.log("🔍 POST - User not found, creating new user");
       try {
         // First check if a user with this ID already exists
         const existingUser = await prisma.user.findFirst({
           where: {
-            OR: [{ id: userId }, { email: "user_" + userId + "@example.com" }],
+            OR: [{ id: userId }, { email: user?.email }],
           },
         });
 
@@ -68,7 +93,7 @@ export const POST = async (req: NextRequest) => {
           await prisma.user.create({
             data: {
               id: userId,
-              email: "user_" + userId + "@example.com", // Use a unique email based on userId
+              email: user?.email || "user_" + userId + "@example.com", // Use user's email or a unique email based on userId
               imagesUploaded: 1,
               subscriptionStatus: "free",
             },
@@ -88,13 +113,13 @@ export const POST = async (req: NextRequest) => {
         // but we'll log the error
       }
     } else if (
-      user.subscriptionStatus !== "active" &&
-      user.imagesUploaded >= FREE_PLAN_IMAGE_LIMIT
+      dbUser.subscriptionStatus !== "active" &&
+      dbUser.imagesUploaded >= FREE_PLAN_IMAGE_LIMIT
     ) {
       // Important: We're checking imagesUploaded (total uploads) not current count
       // This ensures users can't delete images to upload more
       console.error("❌ POST - Free plan limit reached:", {
-        imagesUploaded: user.imagesUploaded,
+        imagesUploaded: dbUser.imagesUploaded,
         limit: FREE_PLAN_IMAGE_LIMIT,
       });
       return NextResponse.json(
@@ -160,14 +185,17 @@ export const PUT = async (req: NextRequest) => {
   try {
     console.log("🔍 PUT - Starting image update");
 
-    const { userId } = getAuth(req);
-    if (!userId) {
+    // Authenticate the user
+    const { authenticated, userId } = await authenticateUser(req);
+
+    if (!authenticated || !userId) {
       console.error("❌ PUT - Unauthorized: No user ID");
       return NextResponse.json(
         { error: "Unauthorized", message: "User not authenticated" },
         { status: 401 }
       );
     }
+
     console.log("✅ PUT - User authenticated:", userId);
 
     let body;
@@ -248,44 +276,29 @@ export const PUT = async (req: NextRequest) => {
       });
       return NextResponse.json(
         {
-          error: "Forbidden",
-          message: "You are not authorized to update this image",
+          error: "Unauthorized",
+          message: "You do not have permission to update this image",
         },
         { status: 403 }
       );
     }
-    console.log("✅ PUT - User authorized to update image");
 
+    // Update the image
     console.log("🔍 PUT - Updating image in database");
-    try {
-      const updatedImage = await db.image.update({
-        where: { id: imageId },
-        data: {
-          src: imageUrl,
-          textMetadata: textMetadata ? textMetadata : null,
-        },
-      });
+    const updatedImage = await db.image.update({
+      where: { id: imageId },
+      data: {
+        src: imageUrl,
+        textMetadata: textMetadata || null,
+      },
+    });
 
-      console.log("✅ PUT - Image updated successfully:", updatedImage.id);
-      return NextResponse.json(updatedImage);
-    } catch (dbError) {
-      console.error("❌ PUT - Database error:", dbError);
-      return NextResponse.json(
-        {
-          error: "Database error",
-          message: "Failed to update image in database",
-        },
-        { status: 500 }
-      );
-    }
+    console.log("✅ PUT - Image updated successfully:", updatedImage.id);
+    return NextResponse.json(updatedImage);
   } catch (error) {
     console.error("❌ PUT - Error:", error);
     return NextResponse.json(
-      {
-        error: "Server error",
-        message: "Failed to update image",
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: "Failed to update image" },
       { status: 500 }
     );
   }

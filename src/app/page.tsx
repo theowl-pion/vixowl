@@ -2,10 +2,11 @@
 
 // src/app/page.tsx
 import React, { useEffect } from "react";
-import { SignInButton, SignUpButton, useUser } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import Logo from "@/components/Logo";
 
 // Features
 const features = [
@@ -254,190 +255,166 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const { isSignedIn } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
 
-  // Redirect if signed in
-  React.useEffect(() => {
-    if (isSignedIn) {
+  useEffect(() => {
+    // If user is already logged in, redirect to home page
+    if (user) {
       router.push("/home");
     }
-  }, [isSignedIn, router]);
-
-  // Force enable scrolling
-  useEffect(() => {
-    document.body.style.overflow = "auto";
-    document.documentElement.style.overflow = "auto";
-  }, []);
+  }, [user, router]);
 
   return (
-    <div className="bg-black text-white overflow-auto">
-      {/* Navigation */}
-      <nav className="bg-black/80 backdrop-blur-md p-4 border-b border-white/10 sticky top-0 z-10">
-        <div className="container mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/assets/vixowl.png"
-              alt="Vixowl Logo"
-              width={40}
-              height={40}
-              className="rounded-md"
-            />
-            <span className="text-2xl font-bold text-[#CDFF63]">Vixowl</span>
-          </Link>
-          <div className="flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <Logo />
+
+            <div className="flex items-center space-x-4">
               <Link
                 href="/gallery"
-                className="text-white/70 hover:text-white transition-colors"
+                className="text-white/80 hover:text-[#CDFF63] px-3 py-1.5 rounded-lg hover:bg-white/5 text-sm"
               >
                 Gallery
               </Link>
               <Link
                 href="/pricing"
-                className="text-white/70 hover:text-white transition-colors"
+                className="text-white/80 hover:text-[#CDFF63] px-3 py-1.5 rounded-lg hover:bg-white/5 text-sm"
               >
                 Pricing
               </Link>
-            </div>
-            <div className="flex gap-4">
-              <SignInButton>
-                <button className="px-4 py-2 bg-transparent border border-white/20 rounded-full text-white hover:bg-white/5 transition-colors">
-                  Sign In
-                </button>
-              </SignInButton>
-              <SignUpButton>
-                <button className="px-4 py-2 bg-[#CDFF63] rounded-full text-black hover:bg-[#CDFF63]/90 transition-colors">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="py-28 bg-gradient-to-b from-black via-gray-900/80 to-black relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-[#CDFF63]/10 rounded-full filter blur-[100px] opacity-30"></div>
-        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full filter blur-[120px] opacity-20"></div>
-
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-6xl font-bold mb-8 leading-tight">
-              Position Text{" "}
-              <span className="text-[#CDFF63]">Behind Images</span> with
-              Precision
-            </h1>
-            <p className="text-xl text-white/70 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Vixowl gives you powerful tools for placing text behind images
-              with precise control over rotation, perspective, and tilt. Create
-              stunning visual compositions effortlessly.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <SignUpButton>
-                <button className="px-8 py-4 bg-[#CDFF63] rounded-full text-black font-medium text-lg hover:bg-[#CDFF63]/90 hover:shadow-lg hover:shadow-[#CDFF63]/20 transition-all">
-                  Get Started Free
-                </button>
-              </SignUpButton>
-              <Link href="/gallery">
-                <button className="px-8 py-4 bg-white/5 border border-white/20 rounded-full text-white font-medium text-lg hover:bg-white/10 transition-colors">
-                  View Gallery
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-24 bg-gradient-to-b from-black to-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Powerful Features</h2>
-            <p className="text-xl text-white/70 max-w-2xl mx-auto">
-              Everything you need to create stunning visuals with precise text
-              positioning behind images
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {features.map((feature) => (
-              <div
-                key={feature.id}
-                className="bg-white/5 p-8 rounded-2xl backdrop-blur-sm border border-white/5 hover:border-[#CDFF63]/30 hover:translate-y-[-5px] transition-all duration-300"
-              >
-                <div className="flex flex-col items-center text-center">
-                  {feature.icon}
-                  <h3 className="text-xl font-semibold mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="text-white/60">{feature.description}</p>
+              {user ? (
+                <Link
+                  href="/home"
+                  className="bg-[#CDFF63] hover:bg-[#CDFF63]/90 text-black px-3 py-1.5 rounded-lg text-sm"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Link
+                    href="/sign-in"
+                    className="text-white/80 hover:text-[#CDFF63] px-3 py-1.5 rounded-lg hover:bg-white/5 text-sm"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="bg-[#CDFF63] hover:bg-[#CDFF63]/90 text-black px-3 py-1.5 rounded-lg text-sm"
+                  >
+                    Sign Up
+                  </Link>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-[#CDFF63] bg-clip-text text-transparent">
+            Text Positioning Behind Images
+            <br />
+            Made Easy
+          </h1>
+          <p className="text-lg md:text-xl text-white/70 mb-10 max-w-3xl mx-auto">
+            Create stunning designs with precise text positioning behind images.
+            Control rotation, perspective, and tilt with our intuitive editor.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/sign-up"
+              className="bg-[#CDFF63] hover:bg-[#CDFF63]/90 text-black px-6 py-3 rounded-lg font-medium text-lg"
+            >
+              Get Started Free
+            </Link>
+            <Link
+              href="/gallery"
+              className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-medium text-lg"
+            >
+              View Gallery
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 bg-gradient-to-b from-gray-900 to-black">
-        <div className="container mx-auto px-6">
-          <div className="bg-gradient-to-r from-[#1E1E1E] to-black rounded-3xl p-12 text-center border border-white/5 relative overflow-hidden">
-            {/* Decorative elements */}
-            <div className="absolute top-0 left-0 w-72 h-72 bg-[#CDFF63]/10 rounded-full filter blur-[100px] opacity-30"></div>
-            <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full filter blur-[120px] opacity-20"></div>
-
-            <h2 className="text-4xl font-bold mb-6 relative z-10">
-              Ready to transform your text and image designs?
-            </h2>
-            <p className="text-xl text-white/70 mb-8 max-w-2xl mx-auto relative z-10">
-              Join thousands of creators who are already using Vixowl to
-              position text behind images with precision and style.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-              <SignUpButton>
-                <button className="px-8 py-4 bg-[#CDFF63] rounded-full text-black font-medium text-lg hover:bg-[#CDFF63]/90 hover:shadow-lg hover:shadow-[#CDFF63]/20 transition-all">
-                  Get started for free →
-                </button>
-              </SignUpButton>
-              <Link href="/pricing">
-                <button className="px-8 py-4 bg-white/5 border border-white/20 rounded-full text-white font-medium text-lg hover:bg-white/10 transition-colors">
-                  View Pricing
-                </button>
-              </Link>
+      {/* Features Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
+          Powerful Features for Creative Control
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature) => (
+            <div
+              key={feature.id}
+              className="bg-white/5 p-6 rounded-xl border border-white/10 hover:border-[#CDFF63]/50 transition-all hover:bg-white/10"
+            >
+              {feature.icon}
+              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+              <p className="text-white/70">{feature.description}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-gradient-to-r from-[#1A1A1A] to-[#2A2A2A] rounded-2xl p-8 md:p-12 border border-white/10">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Ready to Create Amazing Designs?
+            </h2>
+            <p className="text-lg text-white/70 mb-8 max-w-2xl mx-auto">
+              Join thousands of designers and creators who use Vixowl to create
+              stunning visuals with perfectly positioned text.
+            </p>
+            <Link
+              href="/sign-up"
+              className="bg-[#CDFF63] hover:bg-[#CDFF63]/90 text-black px-6 py-3 rounded-lg font-medium text-lg inline-block"
+            >
+              Start Creating Now
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-16 bg-black border-t border-white/10">
-        <div className="container mx-auto px-4">
+      <footer className="border-t border-white/10 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-8 md:mb-0 text-center md:text-left">
-              <h3 className="text-2xl font-bold mb-2 text-[#CDFF63]">Vixowl</h3>
-              <p className="text-white/60 max-w-md">
-                The ultimate platform for positioning text behind images with
-                precision and style.
+            <div className="mb-6 md:mb-0">
+              <Link href="/" className="flex items-center gap-2">
+                <span className="text-xl font-bold text-white">Vixowl</span>
+              </Link>
+              <p className="text-white/50 mt-2">
+                © {new Date().getFullYear()} Vixowl. All rights reserved.
               </p>
             </div>
             <div className="flex gap-8">
               <Link
+                href="/pricing"
+                className="text-white/70 hover:text-[#CDFF63]"
+              >
+                Pricing
+              </Link>
+              <Link
                 href="/gallery"
-                className="text-white/70 hover:text-white transition-colors text-lg"
+                className="text-white/70 hover:text-[#CDFF63]"
               >
                 Gallery
               </Link>
               <Link
-                href="/pricing"
-                className="text-white/70 hover:text-white transition-colors text-lg"
+                href="/sign-in"
+                className="text-white/70 hover:text-[#CDFF63]"
               >
-                Pricing
+                Sign In
               </Link>
             </div>
-          </div>
-          <div className="mt-12 text-center text-white/40 text-sm">
-            © {new Date().getFullYear()} Vixowl. All rights reserved.
           </div>
         </div>
       </footer>

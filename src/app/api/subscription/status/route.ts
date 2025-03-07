@@ -1,16 +1,28 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
 import { NextRequest } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
-
-    if (!userId) {
+    // Get the authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Extract the token
+    const token = authHeader.split(" ")[1];
+
+    // Verify the token
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = data.user.id;
 
     // Get user's subscription from the database
     const user = await db.user.findUnique({

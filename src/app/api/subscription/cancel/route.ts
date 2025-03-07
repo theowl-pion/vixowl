@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { getAuth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = getAuth(req);
-
-    if (!userId) {
+    // Get the authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Extract the token
+    const token = authHeader.split(" ")[1];
+
+    // Verify the token
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = data.user.id;
 
     // Get user from database
     const user = await db.user.findUnique({

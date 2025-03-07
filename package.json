@@ -10,6 +10,7 @@
     "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.8.0",
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@clerk/nextjs": "^6.10.6",
     "@fontsource/inter": "^5.1.1",
@@ -20,8 +21,10 @@
     "@fontsource/poppins": "^5.1.1",
     "@fontsource/roboto": "^5.1.1",
     "@imgly/background-removal": "^1.5.8",
-    "@prisma/client": "^6.3.0",
+    "@prisma/client": "^6.4.1",
     "@stripe/stripe-js": "^5.7.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
     "@types/html2canvas": "^0.5.35",
     "@types/webfontloader": "^1.6.38",
@@ -30,6 +33,7 @@
     "framer-motion": "^12.4.10",
     "html2canvas": "^1.4.1",
     "next": "^15.1.6",
+    "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.6",

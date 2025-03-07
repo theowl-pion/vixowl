@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 // Gallery images with categories and shape information
 const galleryImages = [
@@ -130,29 +131,32 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-auto">
-      {/* Navigation */}
-      <nav className="bg-black/80 backdrop-blur-md p-4 border-b border-white/10 sticky top-0 z-10">
-        <div className="container mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/assets/vixowl.png"
-              alt="Vixowl Logo"
-              width={40}
-              height={40}
-              className="rounded-md"
-            />
-            <span className="text-2xl font-bold text-[#CDFF63]">Vixowl</span>
-          </Link>
-          <div className="flex gap-6">
-            <Link href="/gallery" className="text-[#CDFF63]">
-              Gallery
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-white/70 hover:text-white transition-colors"
-            >
-              Pricing
-            </Link>
+      {/* Navbar */}
+      <nav className="border-b border-white/10 bg-black/50 backdrop-blur-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <Logo />
+
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="text-white/80 hover:text-[#CDFF63] px-3 py-1.5 rounded-lg hover:bg-white/5 text-sm"
+              >
+                Home
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-white/80 hover:text-[#CDFF63] px-3 py-1.5 rounded-lg hover:bg-white/5 text-sm"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/sign-in"
+                className="bg-[#CDFF63] hover:bg-[#CDFF63]/90 text-black px-3 py-1.5 rounded-lg text-sm"
+              >
+                Sign In
+              </Link>
+            </div>
           </div>
         </div>
       </nav>

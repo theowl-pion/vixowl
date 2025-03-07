@@ -7,7 +7,6 @@ import {
 } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import DraggablePanel from "./DraggablePanel";
-import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { uploadImage, updateImage, fetchImage } from "@/services/api";
 import { removeBackgroundClient } from "@/services/clientBackgroundRemoval";
@@ -29,6 +28,7 @@ import { toast } from "react-hot-toast";
 import UpgradeModal from "./UpgradeModal";
 import { useSubscription } from "@/hooks/useSubscription";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
+import { useAuth } from "@/context/AuthContext";
 
 // Add custom styles for animations
 const styles = `
@@ -113,7 +113,7 @@ interface TextUpdates {
 
 export default function ImageEditor({ imageData, imageId }: ImageEditorProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, session } = useAuth();
   const { loadFonts, loadFontOptions } = useGoogleFonts();
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   const [isPanelLocked, setIsPanelLocked] = useState(false);
@@ -727,7 +727,12 @@ export default function ImageEditor({ imageData, imageId }: ImageEditorProps) {
 
       try {
         // Pass the text metadata to the upload function
-        const result = await uploadImage(dataUrl, user.id, textMetadata);
+        const result = await uploadImage(
+          dataUrl,
+          user.id,
+          session?.access_token,
+          textMetadata
+        );
         console.log("✅ Image uploaded successfully:", result);
         setProcessingMessage("");
         toast.success("Image saved successfully!");

@@ -12,19 +12,57 @@ const isServer = typeof window === "undefined";
 // Log environment variables for debugging (only on server)
 if (isServer) {
   console.log(
-    "STRIPE_PUBLISHABLE_KEY set:",
-    !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    "STRIPE_PUBLISHABLE_KEY:",
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+      ? "Set (length: " +
+          process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.length +
+          ")"
+      : "Not set"
   );
-  console.log("STRIPE_PRICE_ID set:", !!process.env.STRIPE_PRICE_ID);
-  console.log("STRIPE_SECRET_KEY set:", !!process.env.STRIPE_SECRET_KEY);
+  console.log("STRIPE_PRICE_ID:", process.env.STRIPE_PRICE_ID || "Not set");
+  console.log(
+    "STRIPE_SECRET_KEY:",
+    process.env.STRIPE_SECRET_KEY
+      ? "Set (length: " + process.env.STRIPE_SECRET_KEY.length + ")"
+      : "Not set"
+  );
+
+  // Check if the keys look valid
+  if (
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
+    !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith("pk_")
+  ) {
+    console.error(
+      "WARNING: STRIPE_PUBLISHABLE_KEY does not start with 'pk_', it may be invalid"
+    );
+  }
+
+  if (
+    process.env.STRIPE_SECRET_KEY &&
+    !process.env.STRIPE_SECRET_KEY.startsWith("sk_")
+  ) {
+    console.error(
+      "WARNING: STRIPE_SECRET_KEY does not start with 'sk_', it may be invalid"
+    );
+  }
 }
 
 // Only initialize Stripe on the server side
-export const stripe = isServer
-  ? new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+let stripeInstance = null;
+try {
+  if (isServer && process.env.STRIPE_SECRET_KEY) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2025-02-24.acacia",
-    })
-  : null;
+    });
+    console.log("Stripe initialized successfully");
+  } else if (isServer) {
+    console.error("Failed to initialize Stripe: STRIPE_SECRET_KEY is not set");
+  }
+} catch (error) {
+  console.error("Error initializing Stripe:", error);
+}
+
+export const stripe = stripeInstance;
 
 export const formatAmountForDisplay = (
   amount: number,
