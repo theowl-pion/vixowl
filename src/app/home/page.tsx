@@ -19,6 +19,7 @@ import UpgradeModal from "@/components/UpgradeModal";
 import { FREE_PLAN_IMAGE_LIMIT } from "@/lib/stripe";
 import UsageDisplay from "@/components/UsageDisplay";
 import { toast } from "react-hot-toast";
+import axios from "axios";
 
 interface Image {
   id: string;
@@ -28,7 +29,7 @@ interface Image {
 }
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +42,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isFixingSubscription, setIsFixingSubscription] = useState(false);
 
   const { isSubscribed, imagesUploaded, remainingImages, refreshUsage } =
     useSubscription();
@@ -204,6 +206,115 @@ export default function HomePage() {
     }
   };
 
+  const handleFixSubscription = async () => {
+    if (!session?.access_token) {
+      toast.error("Please sign in to fix your subscription");
+      return;
+    }
+
+    setIsFixingSubscription(true);
+    try {
+      const response = await axios.post(
+        "/api/subscription/fix",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Subscription status updated successfully");
+        // Refresh subscription data
+        await refreshUsage();
+      } else {
+        toast.error(response.data.message || "No active subscription found");
+      }
+    } catch (error) {
+      console.error("Error fixing subscription:", error);
+      toast.error("Failed to fix subscription status");
+    } finally {
+      setIsFixingSubscription(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!session?.access_token) {
+      toast.error("Please sign in to manage your subscription");
+      return;
+    }
+
+    if (isSubscribed) {
+      try {
+        toast.loading("Accessing billing portal...");
+        const response = await axios.post(
+          "/api/stripe/portal",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+        toast.dismiss();
+        if (response.data.url) {
+          window.location.href = response.data.url;
+        }
+      } catch (error: any) {
+        toast.dismiss();
+        console.error("Error accessing billing portal:", error);
+
+        // Display more specific error message
+        if (error.response) {
+          const errorData = error.response.data;
+          toast.error(
+            errorData.message ||
+              errorData.error ||
+              "Failed to access billing portal"
+          );
+        } else {
+          toast.error("Failed to access billing portal");
+        }
+      }
+    } else {
+      setShowUpgradeModal(true);
+    }
+  };
+
+  const handleCheckSubscription = async () => {
+    if (!session?.access_token) {
+      toast.error("Please sign in to check your subscription");
+      return;
+    }
+
+    try {
+      toast.loading("Checking subscription status...");
+      const response = await axios.get("/api/subscription/check", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      toast.dismiss();
+      console.log("Subscription check:", response.data);
+      toast.success("Subscription status checked. See console for details.");
+    } catch (error: any) {
+      toast.dismiss();
+      console.error("Error checking subscription:", error);
+
+      if (error.response) {
+        const errorData = error.response.data;
+        toast.error(
+          errorData.message || errorData.error || "Failed to check subscription"
+        );
+      } else {
+        toast.error("Failed to check subscription");
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-[#1E1E1E] to-[#121212] overflow-hidden">
       <Navbar />
@@ -248,7 +359,7 @@ export default function HomePage() {
             </div>
 
             <button
-              onClick={() => setShowUpgradeModal(true)}
+              onClick={handleManageSubscription}
               className="bg-gradient-to-r from-[#CDFF63] to-[#CDFF63]/90 text-black px-5 py-2 rounded-full text-sm font-medium hover:shadow-lg hover:shadow-[#CDFF63]/20 transition-all flex items-center gap-2"
             >
               <svg
@@ -265,6 +376,21 @@ export default function HomePage() {
                 />
               </svg>
               {isSubscribed ? "Manage Subscription" : "Upgrade to Pro"}
+            </button>
+
+            <button
+              onClick={handleFixSubscription}
+              disabled={isFixingSubscription}
+              className="bg-[#CDFF63] text-black px-4 py-2 rounded-lg hover:bg-[#CDFF63]/90 transition-colors"
+            >
+              {isFixingSubscription ? "Fixing..." : "Fix Subscription"}
+            </button>
+
+            <button
+              onClick={handleCheckSubscription}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Check Subscription
             </button>
           </div>
         </header>
